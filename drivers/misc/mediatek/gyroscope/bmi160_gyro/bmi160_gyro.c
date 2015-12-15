@@ -159,6 +159,11 @@ struct bmg_i2c_data {
 	atomic_t	fir_en;
 	struct data_filter	fir;
 #endif
+
+/*hzy add for early suspend*/
+#if defined(CONFIG_HAS_EARLYSUSPEND)
+    struct early_suspend    early_drv;
+#endif
 };
 
 #if 0
@@ -1637,6 +1642,7 @@ static struct miscdevice bmg_device = {
 	.fops = &bmg_fops,
 };
 
+#ifndef CONFIG_HAS_EARLYSUSPEND
 static int bmg_suspend(struct i2c_client *client, pm_message_t msg)
 {
 	struct bmg_i2c_data *obj = obj_i2c_data;
@@ -1682,6 +1688,49 @@ static int bmg_resume(struct i2c_client *client)
 	atomic_set(&obj->suspend, 0);
 	return 0;
 }
+#else
+static void bmi160_gyro_early_suspend(struct early_suspend *h)
+{
+	struct bmg_i2c_data *obj = obj_i2c_data;
+	int err = 0;
+	GYRO_FUN();
+
+	if (obj == NULL) {
+		GYRO_ERR("null pointer\n");
+		return;
+	}
+
+	atomic_set(&obj->suspend, 1);
+	err = bmg_set_powermode(obj->client, BMG_SUSPEND_MODE);
+	if (err) {
+		GYRO_ERR("bmg set suspend mode failed, err = %d\n",err);
+		return;
+	}
+	bmg_power(obj->hw, 0);
+	return;
+}
+static void bmi160_gyro_late_resume(struct early_suspend *h)
+{
+	struct bmg_i2c_data *obj = obj_i2c_data;
+	int err;
+	GYRO_FUN();
+
+	if (obj == NULL) {
+		GYRO_ERR("null pointer\n");
+		return;
+	}
+
+	bmg_power(obj->hw, 1);
+	err = bmg_init_client(obj->client, 0);
+	if (err) {
+		GYRO_ERR("initialize client failed, err = %d\n", err);
+		return;
+	}
+
+	atomic_set(&obj->suspend, 0);
+	return;
+}
+#endif/*CONFIG_HAS_EARLYSUSPEND*/
 
 static int bmg_i2c_detect(struct i2c_client *client,
 		struct i2c_board_info *info)
@@ -1888,6 +1937,12 @@ static int bmg_i2c_probe(struct i2c_client *client,
 	}
 */
 
+#ifdef CONFIG_HAS_EARLYSUSPEND
+	obj->early_drv.level    = EARLY_SUSPEND_LEVEL_DISABLE_FB - 2,
+	obj->early_drv.suspend  = bmi160_gyro_early_suspend,
+	obj->early_drv.resume   = bmi160_gyro_late_resume,
+	register_early_suspend(&obj->early_drv);
+#endif
 	bmi160_gyro_init_flag =0;
 	GYRO_LOG("%s: OK\n", __func__);
 	return 0;
@@ -1942,8 +1997,10 @@ static struct i2c_driver bmg_i2c_driver = {
 	.probe = bmg_i2c_probe,
 	.remove	= bmg_i2c_remove,
 	.detect	= bmg_i2c_detect,
+#if !defined(CONFIG_HAS_EARLYSUSPEND)
 	.suspend = bmg_suspend,
 	.resume = bmg_resume,
+#endif
 	.id_table = bmg_i2c_id,
 };
 

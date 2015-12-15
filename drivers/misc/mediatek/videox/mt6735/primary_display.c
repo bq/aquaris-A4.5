@@ -3477,6 +3477,10 @@ int _esd_check_config_handle_vdo(void)
 
 	// 3.write instruction(read from lcm)
 	dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd,CMDQ_ESD_CHECK_READ);
+	
+	/* pull DSI clock lane */
+	DSI_sw_clk_trail_cmdq(0, pgc->cmdq_handle_config_esd);
+	DSI_manual_enter_HS(pgc->cmdq_handle_config_esd);
 
 	// 4.start dsi vdo mode
 	dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd,CMDQ_START_VDO_MODE);
@@ -3665,6 +3669,55 @@ int primary_display_esd_check(void)
         if(primary_display_is_video_mode())
         {
         	primary_display_switch_esd_mode(1);
+
+			/* use cmdq to pull DSI clk lane*/
+			if(primary_display_cmdq_enabled() ){
+				_primary_path_lock(__func__);
+
+				/* 0.create esd check cmdq */
+				cmdqRecCreate(CMDQ_SCENARIO_DISP_ESD_CHECK,&(pgc->cmdq_handle_config_esd));
+				_primary_path_unlock(__func__);
+
+				primary_display_esd_cust_bycmdq(1);
+
+				/* 1.reset*/
+				cmdqRecReset(pgc->cmdq_handle_config_esd);
+
+				/* wait stream eof first */
+				ret = cmdqRecWait(pgc->cmdq_handle_config_esd, CMDQ_EVENT_DISP_RDMA0_EOF);
+				
+				cmdqRecWait(pgc->cmdq_handle_config_esd, CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+				_primary_path_lock(__func__);
+				/* 2.stop dsi vdo mode */
+				dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd,CMDQ_STOP_VDO_MODE);
+
+				/* 3.pull DSI clock lane */
+				DSI_sw_clk_trail_cmdq(0, pgc->cmdq_handle_config_esd);
+				DSI_manual_enter_HS(pgc->cmdq_handle_config_esd);
+
+
+				/* 4.start dsi vdo mode */
+				dpmgr_path_build_cmdq(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd,CMDQ_START_VDO_MODE);
+
+				/* 5. trigger path */
+				cmdqRecClearEventToken(pgc->cmdq_handle_config_esd ,CMDQ_EVENT_MUTEX0_STREAM_EOF);
+
+				if (gEnableSWTrigger==1){
+					DISP_REG_SET(pgc->cmdq_handle_config_esd, DISP_REG_CONFIG_MUTEX_EN(DISP_OVL_SEPARATE_MUTEX_ID), 1);
+				}
+
+				dpmgr_path_trigger(pgc->dpmgr_handle, pgc->cmdq_handle_config_esd, CMDQ_ENABLE);
+
+				_primary_path_unlock(__func__);
+				cmdqRecFlush(pgc->cmdq_handle_config_esd);
+
+				primary_display_esd_cust_bycmdq(0);
+
+				cmdqRecDestroy(pgc->cmdq_handle_config_esd);
+				pgc->cmdq_handle_config_esd = NULL;
+			}
+
             if(_need_register_eint())
             {
                 MMProfileLogEx(ddp_mmp_get_events()->esd_extte, MMProfileFlagPulse, 1, 1);
@@ -3863,7 +3916,7 @@ static int primary_display_esd_check_worker_kthread(void *data)
 		    count++;
 			msleep(3000);
 		}
-        msleep(2000); // esd check every 2s
+        msleep(2000); // esd check/pull clock lane every 2s
 		ret = wait_event_interruptible(esd_check_task_wq,atomic_read(&esd_check_task_wakeup));
         if(ret < 0)
         {

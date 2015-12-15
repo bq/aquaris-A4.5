@@ -388,14 +388,17 @@ void rdma_set_ultra(unsigned int idx, unsigned int width, unsigned int height, u
       else if (width > 540)
       {
           DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x0C011832);
+          DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000A8);//168
       }
       else if (width > 480)
       {
           DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x32010D1C);
+          DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000A3);//163
       }
       else
       {
           DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_MEM_GMC_SETTING_0, 0x39010A16);
+          DISP_REG_SET(handle,idx*DISP_RDMA_INDEX_OFFSET+ DISP_REG_RDMA_MEM_GMC_SETTING_1, 0x000000A5);//165
       }
 
 	  if (gRDMAUltraSetting)

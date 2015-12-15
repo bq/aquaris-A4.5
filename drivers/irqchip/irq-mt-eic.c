@@ -210,6 +210,7 @@ int mt_eint_set_deint(u32 eint_num, u32 irq_num)
  * mt_eint_get_mask: To get the eint mask
  * @eint_num: the EINT number to get
  */
+//nsigned int mt_eint_get_mask(unsigned int eint_num)  //swf modify for hall sensor debug
 static unsigned int mt_eint_get_mask(unsigned int eint_num)
 {
     unsigned long base;
@@ -2279,3 +2280,6 @@ EXPORT_SYMBOL(mt_gpio_set_debounce);
 EXPORT_SYMBOL(mt_gpio_to_irq);
 EXPORT_SYMBOL(mt_eint_clr_deint);
 EXPORT_SYMBOL(mt_eint_set_deint);
+//EXPORT_SYMBOL(mt_eint_get_mask); //swf add for hall sensor debug
+
+

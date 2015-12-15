@@ -36,6 +36,9 @@
 #include <linux/gn_device_check.h>
 #endif
 
+static struct ltr559_priv *double_tap_data = NULL; //swft93
+
+
 /*--------------------hzy add start ------------------------*/
 #include <linux/wakelock.h>
 static int pre_state = 1;/*far away*/
@@ -2189,6 +2192,55 @@ static void alps_devinfo_init()
 #endif
 //zbl alps_info end
 
+ /*swf 20150910 add start for proximity sensor is covered when double tap */
+static int ltr559_read_ps_value_for_double_tap(void);
+int ltr559_get_ps_value_for_double_tap(void)
+{
+	int tp_double_tap = 1;
+//printk("swft93 line=%d,ps_enable =%d\n",__LINE__,double_tap_data->ps_enable);
+	if (!double_tap_data->ps_enable) //screen suspend and ps is not open
+        { 
+		ltr559_enable_ps(double_tap_data->client,1);
+		//msleep(5);//wait for wakeup
+		tp_double_tap = ltr559_read_ps_value_for_double_tap();
+               // printk("swft93 line=%d, tp_double_tap=%d (1=near)\n",__LINE__,tp_double_tap);
+		ltr559_enable_ps(double_tap_data->client,0);
+	} else {                       //screen resume and ps is open or ps is open
+		tp_double_tap = ltr559_read_ps_value_for_double_tap();
+              //  printk("swft93 line=%d, tp_double_tap=%d (screen resume)\n", __LINE__, tp_double_tap);
+	}
+	
+	if(1 == tp_double_tap)
+		return 1;//near
+	else
+		return 0;
+}
+EXPORT_SYMBOL(ltr559_get_ps_value_for_double_tap);
+
+static int ltr559_read_ps_value_for_double_tap(void)
+{
+	int psdata = 8;
+        int err = 0;
+
+        if(err = ltr559_read_data_ps(double_tap_data->client, &double_tap_data->ps))
+	{
+	  printk("swft93 can not get data err:%d\n",err);
+	}
+
+        psdata = ltr559_get_ps_value(double_tap_data, double_tap_data->ps);
+       // printk("swft93 line=%d,enable=%d,psdata=%d(0=near)\n",__LINE__,double_tap_data->ps_enable,psdata);
+
+	if (psdata < 0) {
+		printk("%s read ps value fail\n", __func__);
+		return -EINVAL;
+	}
+
+	if(0 == psdata)
+		return 1; //near
+	else
+		return 0; //far
+}
+ /*swf 20150910 add end for proximity sensor is covered when double tap */
 static int ltr559_i2c_probe(struct i2c_client *client, const struct i2c_device_id *id)
 {
 	struct ltr559_priv *obj;
@@ -2333,7 +2385,7 @@ static int ltr559_i2c_probe(struct i2c_client *client, const struct i2c_device_i
 	strcpy(gn_dev_info_proximity.name, LTR559_DEV_NAME);
 	gn_set_device_info(gn_dev_info_proximity);
 #endif
-	
+	double_tap_data = obj;  //swft93
 	/*hzy add start*/
 	wake_lock_init(&alsps_wakelock,WAKE_LOCK_SUSPEND,"alsps_wakelock");
 	/*hzy add   end*/

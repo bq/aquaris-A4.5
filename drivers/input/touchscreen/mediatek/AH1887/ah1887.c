@@ -43,11 +43,19 @@ static u16 nEnableKey = 1;
 #define AH1887_HALL_STATUS_OPEN 112
 #define AH1887_HALL_STATUS_CLOSE 113
 
+//#define LCSH_DEBUG_HZ
+#if defined(LCSH_DEBUG_HZ)
+#define LCSH_DEBUG(a, arg...) printk(TPD_DEVICE ": " a, ##arg)
+#else
+#define LCSH_DEBUG(arg...)
+#endif
+#define TPD_DEVICE   "swf-hall"
 
 /******************************************************************************
  * extern functions
 *******************************************************************************/
 extern void mt_eint_mask(unsigned int eint_num);
+extern unsigned int mt_eint_get_mask(unsigned int eint_num); //swf add,if open debug to use this function,pls modify in irq-mt-eic.c
 extern void mt_eint_unmask(unsigned int eint_num);
 extern void mt_eint_set_hw_debounce(unsigned int eint_num, unsigned int ms);
 extern void mt_eint_set_polarity(unsigned int eint_num, unsigned int pol);
@@ -171,8 +179,8 @@ static int hall_enable_proc_write(struct file *filp,
 		return -EFAULT;
 	}
 
-	printk("hall_enable_proc_write len:%d", buflen);
-	printk("hall_enable_proc_write str:%s", writebuf);
+	LCSH_DEBUG("hall_enable_proc_write len:%d", buflen);
+	LCSH_DEBUG("hall_enable_proc_write str:%s", writebuf);
 
 	if((writebuf[0] - '0') == 0)
 	{
@@ -258,16 +266,13 @@ int ah1887_create_proc()
 
 void ah1887_eint1_func(void)
 {
-	mt_eint_mask(CUST_EINT_MHALL_NUM);  
-	printk("[hall]: %s \n", __func__);
-//	schedule_work(&eint_work);
+	LCSH_DEBUG("line=%d,fuc=%s.\n",__LINE__,__func__);
 	ah1887_eint1_work(&eint1_work);
 }
 
 void ah1887_eint2_func(void)
 {
-	mt_eint_mask(CUST_EINT_MHALL_1_NUM);  
-	printk("[hall]: %s \n", __func__);
+	LCSH_DEBUG("line=%d,fuc=%s.\n",__LINE__,__func__);
 //	schedule_work(&eint_work);
 	ah1887_eint2_work(&eint2_work);
 }
@@ -295,15 +300,15 @@ int ah1887_setup_eint(void)
 	printk("hall zhaofei eint1 bit is %d\n",eint1_bit);
 	if(eint1_bit == 0)
 	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
+	LCSH_DEBUG("[hall]: %s  line = %d\n", __func__,__LINE__);
 		atomic_set(&at_close, 1); // low close
-		mt_eint_registration(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_HIGH, ah1887_eint1_func, 1);
+		mt_eint_registration(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_HIGH, ah1887_eint1_func, 1);//1:is_auto_umask;0-->hand_umask 
 	}
 	else
 	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
+	LCSH_DEBUG("[hall]: %s  line = %d\n", __func__,__LINE__);
 		atomic_set(&at_close, 0); // high open
-		mt_eint_registration(CUST_EINT_MHALL_NUM, CUST_EINTF_TRIGGER_LOW, ah1887_eint1_func, 1);
+		mt_eint_registration(CUST_EINT_MHALL_NUM, CUST_EINTF_TRIGGER_LOW, ah1887_eint1_func, 1);//1:is_auto_umask;0-->hand_umask 
 	}
 	mt_eint_mask(CUST_EINT_MHALL_NUM); 
 
@@ -316,13 +321,13 @@ int ah1887_setup_eint(void)
 	printk("hall zhaofei eint2 bit is %d\n",eint2_bit);
 	if(eint2_bit == 0)
 	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
+	LCSH_DEBUG("[hall]: %s  line = %d\n", __func__,__LINE__);
 		atomic_set(&at_n_close, 1); // low close
 		mt_eint_registration(CUST_EINT_MHALL_1_NUM, CUST_EINT_POLARITY_HIGH, ah1887_eint2_func, 1);
 	}
 	else
 	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
+	LCSH_DEBUG("[hall]: %s  line = %d\n", __func__,__LINE__);
 		atomic_set(&at_n_close, 0); // high open
 		mt_eint_registration(CUST_EINT_MHALL_1_NUM, CUST_EINTF_TRIGGER_LOW, ah1887_eint2_func, 1);
 	}
@@ -335,147 +340,136 @@ int ah1887_setup_eint(void)
 //#if 0  ////lc --litao open 20150522 for midtest
 static void ah1887_report_key_mittest( int keycode)
 {
-	printk("[hall] ah1887_report_key mitest;\n");
-		input_report_key(hall_kpd, keycode, 1);
-		input_report_key(hall_kpd, keycode, 0);	    	
-		input_sync(hall_kpd);	
+	LCSH_DEBUG("line=%d,fuc=%s.\n",__LINE__,__func__);
+	input_report_key(hall_kpd, keycode, 1);
+	input_report_key(hall_kpd, keycode, 0);	    	
+	input_sync(hall_kpd);	
 }
 //#else 
 static void ah1887_report_key()
 {
-	printk("[hall] ah1887_report_key;\n");
-		input_report_key(hall_kpd, KEY_POWER, 1);
-		input_report_key(hall_kpd, KEY_POWER, 0);	    	
-		input_sync(hall_kpd);	
+	LCSH_DEBUG("line=%d,fuc=%s.\n",__LINE__,__func__);
+	input_report_key(hall_kpd, KEY_POWER, 1);
+	input_report_key(hall_kpd, KEY_POWER, 0);	    	
+	input_sync(hall_kpd);	
 }
+
 //#endif
 ///del litao temp/ extern int tpd_enable_high_Sensitivity(int enable);
 static void ah1887_eint1_work(struct work_struct *work)
 {
-	unsigned char eint_bit ,eint1_bit;
-	unsigned char last_status;
-		printk("[hall]: %s  line = %d\n", __func__,__LINE__);
-
-
-//del litao/	mt_set_gpio_mode(GPIO_MHALL1_EINT_PIN, GPIO_MHALL_EINT_PIN_M_EINT);
-	mt_set_gpio_mode(GPIO_MHALL_EINT_PIN, GPIO_MHALL_EINT_PIN_M_GPIO);   //add litao
-	mt_set_gpio_dir(GPIO_MHALL_EINT_PIN, GPIO_DIR_IN);
-	mt_set_gpio_pull_enable(GPIO_MHALL_EINT_PIN, FALSE);
-	eint_bit = mt_get_gpio_in(GPIO_MHALL_EINT_PIN);	
-
-
-//del litao/	mt_set_gpio_mode(GPIO_MHALL1_EINT_PIN, GPIO_MHALL_EINT_PIN_M_EINT);
-	mt_set_gpio_mode(GPIO_MHALL1_EINT_PIN, GPIO_MHALL1_EINT_PIN_M_GPIO);   //add litao
-	mt_set_gpio_dir(GPIO_MHALL1_EINT_PIN, GPIO_DIR_IN);
-	mt_set_gpio_pull_enable(GPIO_MHALL1_EINT_PIN, FALSE);
-	eint1_bit = mt_get_gpio_in(GPIO_MHALL1_EINT_PIN);
-
-	printk("[hall]: %s  ,line = %d eint1=%d, ent2= %d \n", __func__,__LINE__,eint_bit,eint1_bit);
-//	mutex_lock(&mtx_eint_status);
-	last_status = atomic_read(&at_close);
-	printk("[hall]: %s  ,line = %d, last_status= %d \n", __func__,__LINE__,last_status);
-
-	if(hall_kpd != NULL)
-	{
-		if( 0 == last_status)
-			////ah1887_report_key(KEY_HALL_S_CLOSE);
-			{
-				if(atomic_read(&at_suspend) ==1)
-				{;}
-				else
-				{ah1887_report_key();}
-			ah1887_report_key_mittest(KEY_HALL_DOWN) ;	//lc --litao add 20150522 for midtest
-			}
-		else
-			{
-				////ah1887_report_key(KEY_HALL_S_OPEN);
-				if(atomic_read(&at_resume) ==1)
-				{;}	//lc--litao--add--20150512--for--hall debug
-				else
-				{ah1887_report_key();}
-		ah1887_report_key_mittest(KEY_HALL_UP) ;  //lc --litao add 20150522 for midtest
-			}
-	}
-	
-	// double check for set eint
-	eint_bit = mt_get_gpio_in(GPIO_MHALL_EINT_PIN);	
-	// low close
-	if(eint_bit == last_status)
-	{
-		printk("[hall] dismiss status;\n");
-	}
-	
-	if(eint_bit == 0)
-	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
-		atomic_set(&at_close, 1); // 1 leave High
-		mt_eint_set_polarity(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_HIGH);
-               printk("ah1887 tpd_enable_high_sensitivity = 1.\n");
-               ///del litao temp/tpd_enable_high_Sensitivity(1);
-	}
-	else
-	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
-		atomic_set(&at_close, 0); // low close
-		mt_eint_set_polarity(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_LOW);
-                printk("ah1887 tpd_enable_high_sensitivity = 0.\n");
-               ///del litao temp/ tpd_enable_high_Sensitivity(0);
-	}
-}
-
-static void ah1887_eint2_work(struct work_struct *work)
-{
-
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
 	unsigned char eint_bit;
 	unsigned char last_status;
-	
-//	mutex_lock(&mtx_eint_status);
-	last_status = atomic_read(&at_n_close);
-	
-	if(hall_kpd != NULL)
+	last_status = atomic_read(&at_close);
+
+	if(hall_kpd != NULL)   //normal:get_mask=1 ;midtest:get_mask=1
 	{
-		if( 0 == last_status)
-			////ah1887_report_key(KEY_HALL_S_CLOSE);
-			{
-				if(atomic_read(&at_suspend) ==1)
-				{;}
-				else
-				{ah1887_report_key();}
-				ah1887_report_key_mittest(KEY_HALL_DOWN) ;  //lc --litao add 20150522 for midtest
+	        //LCSH_DEBUG("line=%d,last_status=%d,get_mask=%d.\n",__LINE__,last_status,mt_eint_get_mask(CUST_EINT_MHALL_NUM));
+		if( 0 == last_status){
+			if(atomic_read(&at_suspend) ==1){
+                         // LCSH_DEBUG("line=%d,eint1=0,supend=1,get_mask=%d.\n",__LINE__,mt_eint_get_mask(CUST_EINT_MHALL_NUM));
+			   //mt_eint_unmask(CUST_EINT_MHALL_NUM);
+		        }
+			else{
+			  // mt_eint_mask(CUST_EINT_MHALL_NUM);  
+			   ah1887_report_key();
+                        }
+			   ah1887_report_key_mittest(KEY_HALL_DOWN) ;	//lc --litao add 20150522 for midtest
+		}
+		else{
+			if(atomic_read(&at_resume) ==1){
+			  //LCSH_DEBUG("line=%d,eint1=1,resume=1,get_mask=%d.\n",__LINE__,mt_eint_get_mask(CUST_EINT_MHALL_NUM));
+                           //mt_eint_unmask(CUST_EINT_MHALL_NUM); 
+                        }	
+			else{
+			  //mt_eint_mask(CUST_EINT_MHALL_NUM);  
+			  ah1887_report_key();
 			}
-		else
-			{
-				////ah1887_report_key(KEY_HALL_S_OPEN);
-				if(atomic_read(&at_resume) ==1)
-				{;}	//lc--litao--add--20150512--for--hall debug
-				else
-				{ ah1887_report_key(); }
-			ah1887_report_key_mittest(KEY_HALL_UP) ; //lc --litao add 20150522 for midtest
-			}
+			ah1887_report_key_mittest(KEY_HALL_UP) ;  //lc --litao add 20150522 for midtest
+	       }
 	}
-	
-	
-	// double check for set eint
-	eint_bit = mt_get_gpio_in(GPIO_MHALL1_EINT_PIN);	
+
+	eint_bit = mt_get_gpio_in(GPIO_MHALL_EINT_PIN);	
 	// low close
 	if(eint_bit == last_status)
 	{
-		printk("[hall] dismiss status;\n");
+		LCSH_DEBUG("dismiss status;\n");
 	}
-	
-	if(eint_bit == 0)
-	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
-		atomic_set(&at_n_close, 1); // low close
-		mt_eint_set_polarity(CUST_EINT_MHALL_1_NUM, CUST_EINT_POLARITY_HIGH);
+	if(eint_bit == 0){
+		atomic_set(&at_close, 1); // 1 leave High
+		mt_eint_set_polarity(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_HIGH);
+	        atomic_set(&at_suspend, 1); // swf add 20150917
+	        atomic_set(&at_resume, 0);
+	       LCSH_DEBUG("line=%d,tpd_enable_high_sensitivity = 1.\n",__LINE__);
+		//report key or not--->normal:get_mask=1; mid_test,get_mask=1,but can go to sleep if hand mask
+        }
+	else{
+		atomic_set(&at_close, 0); // low close
+		mt_eint_set_polarity(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_LOW);
+	        atomic_set(&at_suspend, 0); // swf add 20150917
+	        atomic_set(&at_resume, 1);
+                LCSH_DEBUG("line=%d,tpd_enable_high_sensitivity = 0.\n",__LINE__);
+		//report key or not--->normal:get_mask=1; mid_test,get_mask=1;but can not go to sleep if hand mask,so can not wake up
 	}
-	else
+        mt_eint_unmask(CUST_EINT_MHALL_NUM);
+       // LCSH_DEBUG("line=%d,at_close=%d,get_mask=%d.\n", __LINE__,atomic_read(&at_close),mt_eint_get_mask(CUST_EINT_MHALL_NUM));
+}
+
+static void ah1887_eint2_work(struct work_struct *work)  
+{
+	unsigned char eint_bit;
+	unsigned char last_status;
+	last_status = atomic_read(&at_close);
+
+	if(hall_kpd != NULL) 
 	{
-	printk("[hall]: %s  line = %d\n", __func__,__LINE__);
-		atomic_set(&at_n_close, 0); // low close
+         //       LCSH_DEBUG("line=%d,last_status=%d,get_mask=%d.\n",__LINE__,last_status,mt_eint_get_mask(CUST_EINT_MHALL_1_NUM));
+		if( 0 == last_status){
+			if(atomic_read(&at_suspend) ==1){
+                         // LCSH_DEBUG("line=%d,eint2=0,supend=1,get_mask=%d.\n",__LINE__,mt_eint_get_mask(CUST_EINT_MHALL_1_NUM));
+			  //mt_eint_unmask(CUST_EINT_MHALL_1_NUM); 
+		        }
+			else{
+			  //mt_eint_mask(CUST_EINT_MHALL_1_NUM);  
+			   ah1887_report_key();
+                        }
+			   ah1887_report_key_mittest(KEY_HALL_DOWN) ;	//lc --litao add 20150522 for midtest
+		}
+		else{
+			if(atomic_read(&at_resume) ==1){
+                           //LCSH_DEBUG("line=%d,eint2=1,resume=1,get_mask=%d.\n",__LINE__,mt_eint_get_mask(CUST_EINT_MHALL_1_NUM));
+                           //mt_eint_unmask(CUST_EINT_MHALL_1_NUM);
+                        }	
+			else{
+			//  mt_eint_mask(CUST_EINT_MHALL_1_NUM);  
+			    ah1887_report_key();
+			}
+			ah1887_report_key_mittest(KEY_HALL_UP) ;  //lc --litao add 20150522 for midtest
+	       }
+	}
+
+	eint_bit = mt_get_gpio_in(GPIO_MHALL1_EINT_PIN);
+	// low close
+	if(eint_bit == last_status)
+	{
+		LCSH_DEBUG("dismiss status;\n");
+	}
+	if(eint_bit == 0){
+	       atomic_set(&at_close, 1); // 1 leave High
+	       mt_eint_set_polarity(CUST_EINT_MHALL_1_NUM, CUST_EINT_POLARITY_HIGH);
+	       atomic_set(&at_suspend, 1); 
+	       atomic_set(&at_resume, 0);
+	       LCSH_DEBUG("line=%d,ah1887 tpd_enable_high_sensitivity = 1.\n",__LINE__);
+	}
+	else{
+		atomic_set(&at_close, 0); // low close
 		mt_eint_set_polarity(CUST_EINT_MHALL_1_NUM, CUST_EINT_POLARITY_LOW);
+	        atomic_set(&at_suspend, 0);
+	        atomic_set(&at_resume, 1);
+                LCSH_DEBUG("line=%d,ah1887 tpd_enable_high_sensitivity = 0.\n",__LINE__);
 	}
+        mt_eint_unmask(CUST_EINT_MHALL_1_NUM);
+       // LCSH_DEBUG("line=%d,at_close=%d,get_mask=%d.\n", __LINE__,atomic_read(&at_close),mt_eint_get_mask(CUST_EINT_MHALL_1_NUM));
 }
 
 int ah1887_setup_input(void)
@@ -507,48 +501,32 @@ int ah1887_setup_input(void)
 
 static void ah1887_early_suspend(struct early_suspend *h) 
 {
-	printk("[hall]: %s \n", __func__);
-	atomic_set(&at_suspend, 1);
-	atomic_set(&at_resume, 0);
-//lc--litao--add--20150512
-	return;
+  atomic_set(&at_suspend, 1);
+  atomic_set(&at_resume, 0);
+#if 0 //open it if choose hand umask
+  if (atomic_read(&at_close)){
+     mt_eint_unmask(CUST_EINT_MHALL_NUM);  
+     mt_eint_unmask(CUST_EINT_MHALL_1_NUM); 
+     LCSH_DEBUG("early_suspend=%d,resume=%d,at_close=%d.\n",atomic_read(&at_suspend),atomic_read(&at_resume),atomic_read(&at_close));
+     LCSH_DEBUG("line=%d,mask1=%d,mask2=%d.\n",__LINE__,mt_eint_get_mask(CUST_EINT_MHALL_NUM),mt_eint_get_mask(CUST_EINT_MHALL_1_NUM));
+  }
+#endif
+  return;
 }
 
 static void ah1887_late_resume(struct early_suspend *h)
 {
-	unsigned char eint1_bit,eint2_bit;
-	printk("[hall]: %s \n", __func__);
-	atomic_set(&at_suspend, 0);
-	atomic_set(&at_resume, 1);
-//lc--litao--add--20150512
-
-	eint1_bit = mt_get_gpio_in(GPIO_MHALL_EINT_PIN);	
-	printk("[hall]: %s eint_bit1  = %d\n", __func__,eint1_bit);
-	if(eint1_bit == 0)
-	{
-		atomic_set(&at_close, 1); // 1 leave High
-		mt_eint_set_polarity(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_HIGH);
-	}
-	else
-	{
-		atomic_set(&at_close, 0); // low close
-		mt_eint_set_polarity(CUST_EINT_MHALL_NUM, CUST_EINT_POLARITY_LOW);
-	}
-
-	eint2_bit = mt_get_gpio_in(GPIO_MHALL1_EINT_PIN);
-	printk("[hall]: %s eint_bit2  = %d\n", __func__,eint2_bit);
-	if(eint2_bit == 0)
-	{
-		atomic_set(&at_n_close, 1); // 1 leave High
-		mt_eint_set_polarity(CUST_EINT_MHALL_1_NUM, CUST_EINT_POLARITY_HIGH);
-	}
-	else
-	{
-		atomic_set(&at_n_close, 0); // low close
-		mt_eint_set_polarity(CUST_EINT_MHALL_1_NUM, CUST_EINT_POLARITY_LOW);
-	}
-
-	return;
+  atomic_set(&at_suspend, 0);
+  atomic_set(&at_resume, 1);
+#if 0 //open it if choose hand umask
+  if (!atomic_read(&at_close)){
+     mt_eint_unmask(CUST_EINT_MHALL_NUM);
+     mt_eint_unmask(CUST_EINT_MHALL_1_NUM);  
+     LCSH_DEBUG("late_resume=%d,suspend=%d,!at_close=%d.\n",atomic_read(&at_resume),atomic_read(&at_suspend),!atomic_read(&at_close));
+     LCSH_DEBUG("line=%d,mask1=%d,mask2=%d.\n",__LINE__,mt_eint_get_mask(CUST_EINT_MHALL_NUM),mt_eint_get_mask(CUST_EINT_MHALL_1_NUM)); 
+  }
+#endif	
+  return;
 }
 
 int ah1887_setup_earlySuspend(void)

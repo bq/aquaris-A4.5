@@ -473,8 +473,8 @@ struct input_keymap_entry {
 
 #define KEY_MICMUTE		248	/* Mute / unmute the microphone */
 
-#define KEY_HALL_DOWN		266	/* //lc --litao add 20150522 for midtest */
-#define KEY_HALL_UP		267	/* //lc --litao add 20150522 for midtest */
+#define KEY_HALL_DOWN		403//381//256//249//266	/* //lc --litao add 20150522 for midtest */
+#define KEY_HALL_UP		402//382//257//250//267	/* //lc --litao add 20150522 for midtest */
 //lc-add-litao--20140521
 #define KEY_APP_SWITCH  580 /* Capacitive buttons app switch */
 

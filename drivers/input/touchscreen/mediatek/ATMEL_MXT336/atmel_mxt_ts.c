@@ -141,6 +141,7 @@
 static struct task_struct *esd_thread = NULL;  //swf55
 static DECLARE_WAIT_QUEUE_HEAD(esd_waiter);//zbl add
 //static struct mxt_data  *waitful_data = NULL; //swf add 0228
+extern int ltr559_get_ps_value_for_double_tap(void); //swft93
 
 static u8 suspend_flag = 0;
 static write_data_to_read(struct mxt_data *data); 
@@ -2374,6 +2375,10 @@ static void mxt_proc_T93_messages(struct mxt_data *data, u8 *msg)
 
 	/* do not report events if input device not yet registered */
 	if (test_bit(MXT_WK_ENABLE,&data->enable_wakeup)) {
+ /*swf 20150910 add start for proximity sensor is covered when double tap */
+                if(ltr559_get_ps_value_for_double_tap()) //swft93
+                      return 0;
+ /*swf 20150910 end start for proximity sensor is covered when double tap */
 		ret = mxt_proc_gesture_messages(data, MXT_PROCI_TOUCHSEQUENCELOGGER_T93,
 			T93_KEY, msg);
 		if (!ret)
