@@ -1418,12 +1418,14 @@ void dod_init(void)
 	CUST_POWERON_DELTA_CAPACITY_TOLRANCE,CUST_POWERON_LOW_CAPACITY_TOLRANCE,CUST_POWERON_DELTA_HW_SW_OCV_CAPACITY_TOLRANCE);
 
 ///LC--zbl--rm--for keep with 64bit
+/*
 		if(is_battery_remove_pmic()==0 && (g_rtc_fg_soc != 0))
 		{
 			bm_print(BM_LOG_CRTI, "[FGADC]is_battery_remove()==0 , use rtc_fg_soc%d\n",g_rtc_fg_soc);
 			gFG_capacity_by_v = g_rtc_fg_soc;
 		}
 		else
+*/
 		{
 
 #if defined(INIT_SOC_BY_SW_SOC)
