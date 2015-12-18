@@ -1,0 +1,34 @@
+/*
+ * (c) GOODIX 2013
+ */
+
+
+
+#ifndef _GT9XX_FIRMWARE_H_
+#define _GT9XX_FIRMWARE_H_
+
+#ifdef CONFIG_GTP_HEADER_FW_UPDATE
+unsigned char gtp_default_FW[] = {
+};
+#endif
+
+/*
+*[HW INFO]00900600
+*[PID]9150
+*[VID]1010
+*[GENERATED]2013/11/16 20:59:13
+*/
+#ifdef CONFIG_GTP_COMPATIBLE_MODE
+unsigned char gtp_default_FW_fl[] = {
+};
+
+unsigned char gtp_default_FW_hotknot[] = {
+};
+
+unsigned char gtp_default_FW_hotknot2[] = {
+};
+#endif
+
+#endif
+
+

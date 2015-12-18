@@ -1,0 +1,10 @@
+#
+# Touchscreen driver configuration
+#
+
+if TOUCHSCREEN_MTK_AH1887
+
+config AH1887_CONFIG
+	string "AH1887 for Mediatek config"
+
+endif

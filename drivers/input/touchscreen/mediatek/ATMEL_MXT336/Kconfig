@@ -1,0 +1,9 @@
+#
+# Touchscreen driver configuration
+#
+if TOUCHSCREEN_MTK_ATMEL_MXT336
+
+config ATMEL_MXT336_CONFIG
+	string "ATMEL_MXT336 for Mediatek config"
+
+endif
