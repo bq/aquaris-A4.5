@@ -32,16 +32,19 @@
 #define LTR559_DEV_NAME   "ltr559"
 
 /*----------------------------------------------------------------------------*/
+//#define LCSH_DEBUG_LTR
 #define APS_TAG                  "[ltr559] "
 #define APS_FUN(f)               printk(KERN_INFO APS_TAG"%s\n", __FUNCTION__)
-//#define APS_ERR(fmt, args...)    printk(KERN_ERR  APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-//#define APS_LOG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)
-//#define APS_DBG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)     
 
-#define APS_ERR(fmt, args...)	pr_err(APS_TAG fmt, ##args)
-#define APS_LOG(fmt, args...)	pr_err(APS_TAG fmt, ##args)
+#if defined(LCSH_DEBUG_LTR)
+#define APS_ERR(fmt, args...)    printk(KERN_ERR  APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
+#define APS_LOG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)     
+#else
+#define APS_ERR(fmt, args...)	//pr_err(APS_TAG fmt, ##args)
+#define APS_LOG(fmt, args...)	//pr_err(APS_TAG fmt, ##args)
 #define APS_DBG(fmt, args...)	pr_err(APS_TAG fmt, ##args)
-
+#endif
 
 /*----------------------------------------------------------------------------*/
 
@@ -98,8 +101,8 @@ static int final_lux_val;
 
 static int ps_trigger_high = 800;			
 static int ps_trigger_low = 760;				
-static int ps_high_trigger_delta = 150;	
-static int ps_low_trigger_delta = 50;	
+static int ps_high_trigger_delta = 141;//150;	//swf modify 20151224 for proximity near standard data
+static int ps_low_trigger_delta = 29;  //50;	//swf modify 20151224 for proximity far away standard data
 static int dynamic_calibrate = 0;
 static int als_first_enable_flag = 0;
 /*----------------------------------------------------------------------------*/
@@ -107,7 +110,7 @@ static int als_first_enable_flag = 0;
 
 /*----------------------------------------------------------------------------*/
 static int ltr559_als_read(struct i2c_client *client, u16* data);
-static int ltr559_ps_read(struct i2c_client *client, u16* data);
+static int ltr559_ps_read(struct i2c_client *client, int* data);
 
 
 /*----------------------------------------------------------------------------*/
@@ -154,7 +157,7 @@ struct ltr559_priv {
 
     /*data*/
     u16         als;
-    u16          ps;
+    int          ps;  //u16 swf modif 20151224
     u8          _align;
     u16         als_level_num;
     u16         als_value_num;
@@ -675,12 +678,12 @@ static int ltr559_ps_enable(struct i2c_client *client, int enable)
 
 	if (enable == 1) {
 		APS_LOG("PS: enable ps only \n");
-		regdata = 0x23;
+		regdata = 0x2b;//0x23; //swf modify 20151221 for proximity sensitivity
 	} else {
 		APS_LOG("PS: disable ps only \n");
 		regdata &= 0xfc;
 	}
-
+ 
 	err = ltr559_i2c_write_reg(LTR559_PS_CONTR, regdata);
 	if(err<0)
 	{
@@ -693,7 +696,7 @@ static int ltr559_ps_enable(struct i2c_client *client, int enable)
 
 #ifdef GN_MTK_BSP_PS_DYNAMIC_CALI
 	regdata = ltr559_i2c_read_reg(LTR559_PS_CONTR);
-	if(regdata == 0x23 )
+	if(regdata == 0x2b)
 	{
 		ltr559_i2c_write_reg(0x90,  0xFF);
 		ltr559_i2c_write_reg(0x91, 0x07);
@@ -710,7 +713,7 @@ static int ltr559_ps_enable(struct i2c_client *client, int enable)
 }
 
 
-static int ltr559_ps_read(struct i2c_client *client, u16 *data)
+static int ltr559_ps_read(struct i2c_client *client, int *data) //u16 swf modif 20151224
 {
 	int psval_lo, psval_hi, psdata;
 
@@ -733,9 +736,10 @@ static int ltr559_ps_read(struct i2c_client *client, u16 *data)
 	
 	psdata = ((psval_hi & 7)* 256) + psval_lo;
     //psdata = ((psval_hi&0x7)<<8) + psval_lo;
-    APS_DBG("ps_rawdata = %d\n", psdata);
+
 
 	*data = psdata;
+    APS_DBG("ps_rawdata = %d,int *data=%d .\n", psdata,*data);
 	return 0;
     
 	out:
@@ -1466,19 +1470,22 @@ static int ltr559_get_als_value(struct ltr559_priv *obj, u16 als)
 	}
 }
 /*----------------------------------------------------------------------------*/
-static int ltr559_get_ps_value(struct ltr559_priv *obj, u16 ps)
+static int ltr559_get_ps_value(struct ltr559_priv *obj, int ps)//u16 swf modif 20151224
 {
 	int val, invalid = 0;
 
 	static int val_temp = 1;
-	if((ps > atomic_read(&obj->ps_thd_val_high)))
+APS_DBG("func=%s,ps=%d,ps_trigger_high=%d,ps_trigger_low=%d .\n",__func__,ps,ps_trigger_high,ps_trigger_low);
+	if(ps > ps_trigger_high) //swf modif 20151224 for proximity sensitivity
+	//if((ps > atomic_read(&obj->ps_thd_val_high)))
 	{
 		val = 0;  /*close*/
 		val_temp = 0;
 		intr_flag_value = 1;
 	}
 			//else if((ps < atomic_read(&obj->ps_thd_val_low))&&(temp_ps[0]  < atomic_read(&obj->ps_thd_val_low)))
-	else if((ps < atomic_read(&obj->ps_thd_val_low)))
+	else if(ps <ps_trigger_low) //swf modif 20151224 for proximity sensitivity
+	//else if((ps < atomic_read(&obj->ps_thd_val_low)))
 	{
 		val = 1;  /*far away*/
 		val_temp = 1;
@@ -1704,7 +1711,7 @@ static void ltr559_eint_work(struct work_struct *work)
 		//sensor_data.status = SENSOR_STATUS_ACCURACY_MEDIUM;			
 /*singal interrupt function add*/
 		//intr_flag_value = value;
-		APS_DBG("intr_flag_value=%d\n",intr_flag_value);
+		APS_DBG("rawdata intr_flag_value=%d\n",intr_flag_value);
 #if 1
 		if(intr_flag_value){
 				APS_DBG(" interrupt value ps will < ps_threshold_low");
@@ -1771,15 +1778,12 @@ static void ltr559_eint_work(struct work_struct *work)
 					dynamic_calibrate = obj->ps;
 
 				}	
-
 				if(obj->ps  > 50){
 					temp_noise = obj->ps - 50;
 				}else{
 					temp_noise = 0;
 				}
 #endif			
-
-
 				
 				databuf[0] = LTR559_PS_THRES_LOW_0;	
 				databuf[1] = (u8)(temp_noise & 0x00FF);
@@ -1910,8 +1914,9 @@ static long ltr559_unlocked_ioctl(struct file *file, unsigned int cmd,
 			break;
 // LC--hzk--add for midtest start 2015-11-16
 		case ALSPS_GET_PS_THRESHOLD_VALUE:
-			err = atomic_read(&obj->ps_thd_val_high);	
-			if(err < 0)
+			//dat = atomic_read(&obj->ps_thd_val_high);
+			dat = ps_trigger_high;
+			if(dat < 0)
 				dat = -1;
 			if(copy_to_user(ptr, &dat, sizeof(dat)))
 			{
@@ -2043,8 +2048,10 @@ static int ltr559_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 			return err;
 		}
 
+#if 0
 		atomic_set(&obj->ps_suspend, 1);
 		err = ltr559_ps_enable(obj->client, 0);
+		APS_LOG("swfps ps_enable_err=%d,ps_suspend=%d .\n",err,atomic_read(&obj->ps_suspend));
 		if(err < 0)
 		{
 			APS_ERR("disable ps:  %d\n", err);
@@ -2052,8 +2059,11 @@ static int ltr559_i2c_suspend(struct i2c_client *client, pm_message_t msg)
 		}
 		
 		ltr559_power(obj->hw, 0);
+#endif
+
 	}
 	return 0;
+
 }
 /*----------------------------------------------------------------------------*/
 static int ltr559_i2c_resume(struct i2c_client *client)
@@ -2084,16 +2094,18 @@ static int ltr559_i2c_resume(struct i2c_client *client)
 			APS_ERR("enable als fail: %d\n", err);        
 		}
 	}
+#if 0
 	atomic_set(&obj->ps_suspend, 0);
 	if(test_bit(CMC_BIT_PS,  &obj->enable))
 	{
 		err = ltr559_ps_enable(obj->client, 1);
+		APS_LOG("swfps_resume ps_enable_err=%d,ps_suspend=%d .\n",err,atomic_read(&obj->ps_suspend));
 	    if (err < 0)
 		{
 			APS_ERR("enable ps fail: %d\n", err);                
 		}
 	}
-
+#endif
 	return 0;
 }
 #if defined(CONFIG_HAS_EARLYSUSPEND)

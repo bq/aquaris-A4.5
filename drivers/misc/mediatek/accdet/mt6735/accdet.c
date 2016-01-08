@@ -1161,7 +1161,7 @@ static inline void accdet_init(void)
 	pmic_pwrap_write(TOP_RST_ACCDET_SET, ACCDET_RESET_SET);
 	/*ACCDET_DEBUG("ACCDET reset function test: reset finished!!\n\r");*/
 	pmic_pwrap_write(TOP_RST_ACCDET_CLR, ACCDET_RESET_CLR);
-	//msleep(1000);//lc mike_zhu 20151108 for plugin shake 
+	msleep(700);//lc mike_zhu 20151108 for plugin shake 
 	/*init  pwm frequency and duty*/
 	pmic_pwrap_write(ACCDET_PWM_WIDTH, REGISTER_VALUE(cust_headset_settings->pwm_width));
 	pmic_pwrap_write(ACCDET_PWM_THRESH, REGISTER_VALUE(cust_headset_settings->pwm_thresh));

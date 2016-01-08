@@ -2026,7 +2026,7 @@ static ssize_t mxt_t19_gpio_show(struct device *dev,
 	struct mxt_data *data = dev_get_drvdata(dev);
 	return scnprintf(buf, PAGE_SIZE, "0x%x\n", data->alt_chip);
 }
-
+/*
 static ssize_t mxt_t19_gpio_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
 {
 	struct mxt_data *data = dev_get_drvdata(dev);
@@ -2040,6 +2040,34 @@ static ssize_t mxt_t19_gpio_store(struct device *dev, struct device_attribute *a
 	//DBG("data->alt_chip: 0x%d\n", data->alt_chip);
 
 }
+*/
+static ssize_t mxt_t19_gpio_store(struct device *dev, struct device_attribute *attr, const char *buf, size_t count)
+{
+	struct mxt_data *data = dev_get_drvdata(dev);
+
+	int cmd;
+
+	if(sscanf(buf, "%d", &cmd) < 0)
+		return -EINVAL;
+	switch(cmd)
+	{
+		case 0:   
+			data->alt_chip = 0;
+			break;
+		case 2:    
+			data->alt_chip = 2;
+			break;
+		default:
+			break;
+	}
+
+	DBG("data->alt_chip: 0x%d\n", data->alt_chip);
+
+	return count;
+}
+
+
+
 
 static ssize_t mxt_irq_depth_show(struct device *dev,
 					struct device_attribute *attr, char *buf)

@@ -122,12 +122,14 @@ static void mag_work_func(struct work_struct *work)
 					continue;
 				}
 			}
-			while ((cur_ns - o_pre_ns) >= delay_ms*1800000LL) {
+			//while ((cur_ns - o_pre_ns) >= delay_ms*1800000LL) { //swf modify 20151221 for factory mode compass test error
+			if ((cur_ns - o_pre_ns) >= delay_ms*1800000LL) {
 				o_pre_ns += delay_ms*1000000LL;
 				mag_data_report(ORIENTATION, cxt->drv_data[i].mag_data.values[0],
-					cxt->drv_data[i].mag_data.values[1],
+					cxt->drv_data[i].mag_data.values[1], 
 					cxt->drv_data[i].mag_data.values[2],
 					cxt->drv_data[i].mag_data.status, o_pre_ns);
+				printk("func=mag_work_func,line=%d, mag_data_report error !.\n",__LINE__);
 			}
 
 			mag_data_report(ORIENTATION, cxt->drv_data[i].mag_data.values[0],

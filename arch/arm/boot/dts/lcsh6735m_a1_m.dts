@@ -169,7 +169,7 @@ memory@00000000 {
 		pinctrl-0 = <&accdet_pins_default>;
 		pinctrl-1 = <&accdet_pins_as_int>;
 		accdet-mic-vol = <7>;
-		headset-mode-setting = <0x500 0x500 1 0x1F0 0x800 0x800 0x20>;
+		headset-mode-setting = <0x500 0x500 1 0x1F0 0x2000 0x2000 0x20>;
 		accdet-plugout-debounce = <20>;
 		/*1:ACC mode, 2:low cost without in bias, 6:low cost with in bias*/
 		accdet-mic-mode = <1>;
