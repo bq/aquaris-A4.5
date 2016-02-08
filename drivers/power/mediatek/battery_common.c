@@ -1932,8 +1932,20 @@ static void battery_update(struct battery_data *bat_data)
 	if (resetBatteryMeter == KAL_TRUE) {
 		battery_meter_reset();
 	} else {
+
+
 		if (bat_is_recharging_phase() == KAL_TRUE) {
 			BMT_status.UI_SOC = 100;
+
+//for run-in apk auto exit --start
+#if defined(BAT_OVER_SOC_RECHARGE)
+			if(g_battery_test_status == KAL_TRUE) {
+				battery_log(BAT_LOG_CRTI, "g_battery_test_status = %d\n", g_battery_test_status);
+				BMT_status.UI_SOC = BMT_status.SOC;
+			}
+#endif
+//for run-in apk auto exit --end
+		
 			battery_log(BAT_LOG_CRTI, "[recharging] UI_SOC=%d, SOC=%d\n",
 				    BMT_status.UI_SOC, BMT_status.SOC);
 		} else {
