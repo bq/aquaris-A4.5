@@ -892,7 +892,7 @@ static void lcm_devinfo_init(void)
                 if(gpio_get_value(GPIO_READ_ID_PIN)==1)
                     devinfo_lcm->device_vendor = "yushun";
                 else
-		    devinfo_lcm->device_vendor = "truly";
+		    devinfo_lcm->device_vendor = "yushunlg";
 		devinfo_lcm->device_version = v_info;
 		devinfo_lcm->device_info = "540*960";
 		devinfo_check_add_device(devinfo_lcm);
@@ -908,7 +908,7 @@ static int lcm_proc_open_show (struct seq_file* m, void* data)
     if(gpio_get_value(GPIO_READ_ID_PIN)==1)
           cnt = sprintf(temp, "LCM[yushun]otm9608_qhd_dsi_cmd\n");
     else
-          cnt = sprintf(temp, "LCM[xinli]otm9608_qhd_dsi_cmd\n");
+          cnt = sprintf(temp, "LCM[yushunlg]otm9608_qhd_dsi_cmd\n");
     seq_printf(m, "%s\n", temp);
     return 0;
 
