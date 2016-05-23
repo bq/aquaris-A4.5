@@ -441,48 +441,48 @@
  * Flags for LINUX(OS) dependent
  *------------------------------------------------------------------------------
  */
-#define CFG_MAX_WLAN_DEVICES                1	/* number of wlan card will coexist */
+#define CFG_MAX_WLAN_DEVICES			1	/* number of wlan card will coexist */
 
-#define CFG_MAX_TXQ_NUM                     4	/* number of tx queue for support multi-queue h/w  */
+#define CFG_MAX_TXQ_NUM				4	/* number of tx queue for support multi-queue h/w  */
 
-#define CFG_USE_SPIN_LOCK_BOTTOM_HALF       0	/* 1: Enable use of SPIN LOCK Bottom Half for LINUX
-						   0: Disable - use SPIN LOCK IRQ SAVE instead */
+#define CFG_USE_SPIN_LOCK_BOTTOM_HALF		0	/* 1: Enable use of SPIN LOCK Bottom Half for LINUX
+							   0: Disable - use SPIN LOCK IRQ SAVE instead */
 
-#define CFG_TX_PADDING_SMALL_ETH_PACKET     0	/* 1: Enable - Drop ethernet packet if it < 14 bytes.
-						   And pad ethernet packet with dummy 0 if it < 60 bytes.
-						   0: Disable */
+#define CFG_TX_PADDING_SMALL_ETH_PACKET		0	/* 1: Enable - Drop ethernet packet if it < 14 bytes.
+							   And pad ethernet packet with dummy 0 if it < 60 bytes.
+							   0: Disable */
 
-#define CFG_TX_STOP_NETIF_QUEUE_THRESHOLD   256	/* packets */
+#define CFG_TX_STOP_NETIF_QUEUE_THRESHOLD	256	/* packets */
 
 #define CFG_TX_STOP_NETIF_PER_QUEUE_THRESHOLD   512	/* packets */
 #define CFG_TX_START_NETIF_PER_QUEUE_THRESHOLD  128	/* packets */
 
-#define ETH_P_1X                            0x888E
-#define IPTOS_PREC_OFFSET                   5
-#define USER_PRIORITY_DEFAULT               0
+#define ETH_P_1X				0x888E
+#define IPTOS_PREC_OFFSET			5
+#define USER_PRIORITY_DEFAULT			0
 
-#define ETH_WPI_1X                         0x88B4
+#define ETH_WPI_1X				0x88B4
 
 #define ETH_HLEN                                14
 #define ETH_TYPE_LEN_OFFSET                     12
 #define ETH_P_IP                                0x0800
 #define ETH_P_1X                                0x888E
 #define ETH_P_PRE_1X                            0x88C7
-#define ETH_P_ARP								0x0806
+#define ETH_P_ARP				0x0806
 
-#define ARP_PRO_REQ								1
-#define ARP_PRO_RSP								2
+#define ARP_PRO_REQ				1
+#define ARP_PRO_RSP				2
 
-#define IPVERSION                               4
-#define IP_HEADER_LEN                           20
+#define IPVERSION				4
+#define IP_HEADER_LEN				20
 
-#define IP_PRO_ICMP								0x01
-#define IP_PRO_UDP								0x11
-#define IP_PRO_TCP								0x06
+#define IP_PRO_ICMP				0x01
+#define IP_PRO_UDP				0x11
+#define IP_PRO_TCP				0x06
 
-#define UDP_PORT_DHCPS							0x43
-#define UDP_PORT_DHCPC							0x44
-#define UDP_PORT_DNS							0x35
+#define UDP_PORT_DHCPS				0x43
+#define UDP_PORT_DHCPC				0x44
+#define UDP_PORT_DNS				0x35
 
 #define IPVH_VERSION_OFFSET                     4	/* For Little-Endian */
 #define IPVH_VERSION_MASK                       0xF0
@@ -649,9 +649,10 @@ extern BOOLEAN fgIsBusAccessFailed;
 #define GLUE_FLAG_FRAME_FILTER_AIS_BIT  (9)
 #define GLUE_FLAG_HIF_LOOPBK_AUTO_BIT   (10)
 
-#define GLUE_BOW_KFIFO_DEPTH        (1024)
-/* #define GLUE_BOW_DEVICE_NAME        "MT6620 802.11 AMP" */
-#define GLUE_BOW_DEVICE_NAME        "ampc0"
+#define GLUE_BOW_KFIFO_DEPTH		(1024)
+/* #define GLUE_BOW_DEVICE_NAME		"MT6620 802.11 AMP" */
+#define GLUE_BOW_DEVICE_NAME		"ampc0"
+#define GLUE_INFO_WSCIE_LENGTH		500
 
 /*******************************************************************************
 *                             D A T A   T Y P E S
@@ -898,7 +899,7 @@ struct _GLUE_INFO_T {
 #endif
 #endif
 	BOOLEAN fgWpsActive;
-	UINT_8 aucWSCIE[500];	/*for probe req */
+	UINT_8 aucWSCIE[GLUE_INFO_WSCIE_LENGTH];	/*for probe req */
 	UINT_16 u2WSCIELen;
 	UINT_8 aucWSCAssocInfoIE[200];	/*for Assoc req */
 	UINT_16 u2WSCAssocInfoIELen;
