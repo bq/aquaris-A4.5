@@ -774,7 +774,7 @@ static void __disable_runtime(struct rq *rq)
 			/*
 			 * Can't reclaim from ourselves or disabled runqueues.
 			 */
-			if (iter == rt_rq || iter->rt_runtime == RUNTIME_INF || iter->rt_disable_borrow) {
+			if (iter == rt_rq || iter->rt_runtime == RUNTIME_INF) {
 #ifdef MTK_DEBUG_CGROUP
 				pr_warn("1. disable_runtime, cpu=%d, %llu\n",
 					i, iter->rt_runtime);
@@ -840,6 +840,20 @@ balanced:
 		/* sched:  prevent normal task could run anymore, use rt_disable_borrow */
 		/* rt_rq->rt_runtime = RUNTIME_INF; */
 		rt_rq->rt_runtime = rt_b->rt_runtime;
+
+		/* sched: set rt_runtime =0 and print __disable_runtime rt_throttled*/
+		if (1 == rt_rq->rt_throttled) {
+			u64 rt_time_pre;
+
+			rt_time_pre = rt_rq->rt_time;
+			rt_rq->rt_throttled = 0;
+			printk_deferred("sched: disable_runtime: RT throttling inactivated, cpu=%d\n",
+				rq->cpu);
+			printk_deferred("sched: cpu=%d, rt_time[%llu -> %llu], rt_throttled = %d\n",
+				rq->cpu, rt_time_pre, rt_rq->rt_time, rt_rq->rt_throttled);
+			printk_deferred("sched: rt_runtime=[%llu]\n",
+				rt_rq->rt_runtime);
+		}
 		rt_rq->rt_throttled = 0;
 #ifdef MTK_DEBUG_CGROUP
 		{
@@ -883,15 +897,14 @@ static void __enable_runtime(struct rq *rq)
 
 		raw_spin_lock(&rt_b->rt_runtime_lock);
 		raw_spin_lock(&rt_rq->rt_runtime_lock);
-		if (rt_rq->rt_disable_borrow) {
+
 #ifdef MTK_DEBUG_CGROUP
-			pr_warn("enable_runtime %d\n", rq->cpu);
+		pr_warn("enable_runtime %d\n", rq->cpu);
 #endif
-			rt_rq->rt_runtime = rt_b->rt_runtime;
-			rt_rq->rt_time = 0;
-			rt_rq->rt_throttled = 0;
-			rt_rq->rt_disable_borrow = 0;
-		}
+		rt_rq->rt_runtime = rt_b->rt_runtime;
+		rt_rq->rt_time = 0;
+		rt_rq->rt_throttled = 0;
+
 		raw_spin_unlock(&rt_rq->rt_runtime_lock);
 		raw_spin_unlock(&rt_b->rt_runtime_lock);
 	}
@@ -920,7 +933,6 @@ static inline int balance_runtime(struct rt_rq *rt_rq)
 	return 0;
 }
 #endif /* CONFIG_SMP */
-
 static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 {
 	int i, idle = 1, throttled = 0;
@@ -972,13 +984,11 @@ static int do_sched_rt_period_timer(struct rt_bandwidth *rt_b, int overrun)
 			}
 			if (rt_rq->rt_throttled && rt_rq->rt_time < runtime) {
 				/* sched:print throttle*/
-				printk_deferred("sched: RT throttling inactivated");
-				printk_deferred(" cpu=%d\n", i);
+				printk_deferred("sched: RT throttling inactivated cpu=%d\n", i);
 				rt_rq->rt_throttled = 0;
 				mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 						rq_cpu(rq), rq->rt.rt_throttled);
 				enqueue = 1;
-
 				/*
 				 * Force a clock update if the CPU was idle,
 				 * lest wakeup -> unthrottle time accumulate.
@@ -1065,9 +1075,11 @@ static int sched_rt_runtime_exceeded(struct rt_rq *rt_rq)
 		if (likely(rt_b->rt_runtime)) {
 			rt_rq->rt_throttled = 1;
 			/* sched:print throttle every time*/
-			printk_deferred("sched: RT throttling activated\n");
+			printk_deferred("sched: RT throttling activated cpu\n");
+#ifdef CONFIG_RT_GROUP_SCHED
 			mt_sched_printf(sched_rt_info, "cpu=%d rt_throttled=%d",
 					cpu, rt_rq->rt_throttled);
+#endif
 #ifdef CONFIG_MTPROF
 			/* sched:rt throttle monitor */
 			mt_rt_mon_switch(MON_STOP);
@@ -2220,6 +2232,19 @@ static void rq_offline_rt(struct rq *rq)
 	cpupri_set(&rq->rd->cpupri, rq->cpu, CPUPRI_INVALID);
 }
 
+void unthrottle_offline_rt_rqs(struct rq *rq)
+{
+	rt_rq_iter_t iter;
+	struct rt_rq *rt_rq;
+
+	for_each_rt_rq(rt_rq, iter, rq) {
+		if (rt_rq_throttled(rt_rq)) {
+			rt_rq->rt_throttled = 0;
+			printk_deferred("sched: migrate_tasks: RT throttling inactivated\n");
+		}
+		sched_rt_rq_enqueue(rt_rq);
+	}
+}
 /*
  * When switch from the rt queue, we bring ourselves to a position
  * that we might want to pull RT tasks from other runqueues.
