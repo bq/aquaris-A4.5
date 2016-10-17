@@ -2569,22 +2569,43 @@ static int ltr559_read_ps_value_for_double_tap(void);
 int ltr559_get_ps_value_for_double_tap(void)
 {
 	int tp_double_tap = 1;
+	int err=0;
    // printk("swft93 line=%d,enable =%d\n",__LINE__,double_tap_data->ps_enable);
+  //  mutex_lock(&ltr559_for_double_tap);
 	if (!double_tap_data->ps_enable) //screen suspend and ps is not open
         { 
-        
-		ltr559_ps_enable(double_tap_data->client,1);
+        printk("swft93 gonging_enabel line=%d  ps_enable 111111111111111.\n",__LINE__);
+		disable_irq_nosync(ltr559_obj->irq);		
+		//ltr559_ps_enable(double_tap_data->client,1);
+		err = ltr559_i2c_write_reg(LTR559_PS_CONTR, 0x2b);
+		if(err<0)
+		{
+			printk("swft93 PS: enable ps err: %d \n", err);
+			return err;
+		}
 		
+		//ltr559_show_reg_bug();
+		msleep(10);
+			
 		tp_double_tap = ltr559_read_ps_value_for_double_tap();
             //    printk("swft93 line=%d, tp_double_tap=%d (1=near)\n",__LINE__,tp_double_tap);
-		ltr559_ps_enable(double_tap_data->client,0);
+		//ltr559_ps_enable(double_tap_data->client,0);
+		err = ltr559_i2c_write_reg(LTR559_PS_CONTR, 0x0);
+		if(err<0)
+		{
+			printk("swft93 PS: enable ps err: %d \n", err);
+			return err;
+		}
+		enable_irq(ltr559_obj->irq);	
+	//	ltr559_show_reg_bug();
+    printk("swft93 gonging_disable line=%d  ps_disable 0000000000000.\n",__LINE__);
 	} else {                       //screen resume and ps is open or ps is open
 		tp_double_tap = ltr559_read_ps_value_for_double_tap();
-            //    printk("swft93 line=%d, tp_double_tap=%d (screen resume)\n", __LINE__, tp_double_tap);
+   // printk("swft93 line=%d, tp_double_tap=%d (screen resume)\n", __LINE__, tp_double_tap);
 	}
-	
+	printk("swft93 read_ps_return_value line=%d  tp_double_tap =%d (1=near) .\n",__LINE__,tp_double_tap );
 	if(1 == tp_double_tap)
-		return 1;//near
+		return 1;  //near
 	else
 		return 0;
 }
