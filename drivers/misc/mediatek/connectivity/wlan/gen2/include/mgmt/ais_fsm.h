@@ -288,6 +288,15 @@ typedef enum _ENUM_AIS_STATE_T {
 	AIS_STATE_NUM
 } ENUM_AIS_STATE_T;
 
+/* reconnect level for determining if we should reconnect */
+typedef enum _ENUM_RECONNECT_LEVEL_T {
+	RECONNECT_LEVEL_MIN = 0,
+	RECONNECT_LEVEL_ROAMING_FAIL,		/* roaming failed */
+	RECONNECT_LEVEL_BEACON_TIMEOUT,		/* driver beacon timeout */
+	RECONNECT_LEVEL_USER_SET,		/* user set connect or disassociate */
+	RECONNECT_LEVEL_MAX
+} ENUM_RECONNECT_LEVEL_T;
+
 typedef struct _MSG_AIS_ABORT_T {
 	MSG_HDR_T rMsgHdr;	/* Must be the first member */
 	UINT_8 ucReasonOfDisconnect;
@@ -355,7 +364,7 @@ typedef struct _AIS_FSM_INFO_T {
 
 	TIMER_T rIbssAloneTimer;
 
-	TIMER_T rIndicationOfDisconnectTimer;
+	UINT_32 u4PostponeIndStartTime;
 
 	TIMER_T rJoinTimeoutTimer;
 
@@ -482,7 +491,7 @@ VOID
 aisIndicationOfMediaStateToHost(IN P_ADAPTER_T prAdapter,
 				ENUM_PARAM_MEDIA_STATE_T eConnectionState, BOOLEAN fgDelayIndication);
 
-VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, ULONG ulParam);
+VOID aisPostponedEventOfDisconnTimeout(IN P_ADAPTER_T prAdapter, P_AIS_FSM_INFO_T prAisFsmInfo);
 
 VOID aisUpdateBssInfoForJOIN(IN P_ADAPTER_T prAdapter, P_STA_RECORD_T prStaRec, P_SW_RFB_T prAssocRspSwRfb);
 
