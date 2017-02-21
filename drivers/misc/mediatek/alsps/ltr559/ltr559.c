@@ -32,14 +32,14 @@
 #define LTR559_DEV_NAME   "ltr559"
 
 /*----------------------------------------------------------------------------*/
-//#define LCSH_DEBUG_LTR
+#define LCSH_DEBUG_LTR
 #define APS_TAG                  "[ltr559] "
 #define APS_FUN(f)               printk(KERN_INFO APS_TAG"%s\n", __FUNCTION__)
 
 #if defined(LCSH_DEBUG_LTR)
 #define APS_ERR(fmt, args...)    printk(KERN_ERR  APS_TAG"%s %d : "fmt, __FUNCTION__, __LINE__, ##args)
-#define APS_LOG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)
-#define APS_DBG(fmt, args...)    printk(KERN_INFO APS_TAG fmt, ##args)     
+#define APS_LOG(fmt, args...)    //printk(KERN_INFO APS_TAG fmt, ##args)
+#define APS_DBG(fmt, args...)    //printk(KERN_INFO APS_TAG fmt, ##args)     
 #else
 #define APS_ERR(fmt, args...)	//pr_err(APS_TAG fmt, ##args)
 #define APS_LOG(fmt, args...)	//pr_err(APS_TAG fmt, ##args)
@@ -259,13 +259,15 @@ static int ltr559_i2c_read_reg(u8 regnum)
 	res = i2c_master_send(ltr559_obj->client, buffer, 0x1);
 	if(res <= 0)	{
 	   
-	   APS_ERR("read reg send res = %d\n",res);
+	    APS_ERR("read reg send res = %d\n",res);
+		mutex_unlock(&ltr559_mutex);
 		return res;
 	}
 	res = i2c_master_recv(ltr559_obj->client, reg_value, 0x1);
 	if(res <= 0)
 	{
 		APS_ERR("read reg recv res = %d\n",res);
+		mutex_unlock(&ltr559_mutex);
 		return res;
 	}
 
@@ -1889,6 +1891,7 @@ static void ltr559_eint_work(struct work_struct *work)
     		if(obj->ps < 0)
     		{
     			err = -1;
+				mutex_unlock(&ltrinterrupt_mutex);
     			return;
     		}
 
@@ -1920,6 +1923,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 				databuf[0] = LTR559_PS_THRES_LOW_1;	
@@ -1927,6 +1931,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 				databuf[0] = LTR559_PS_THRES_UP_0;	
@@ -1934,6 +1939,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 				databuf[0] = LTR559_PS_THRES_UP_1; 
@@ -1941,6 +1947,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 		}
@@ -1989,6 +1996,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 				databuf[0] = LTR559_PS_THRES_LOW_1;	
@@ -1996,6 +2004,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 				databuf[0] = LTR559_PS_THRES_UP_0;	
@@ -2003,6 +2012,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 				databuf[0] = LTR559_PS_THRES_UP_1; 
@@ -2010,6 +2020,7 @@ static void ltr559_eint_work(struct work_struct *work)
 				res = i2c_master_send(obj->client, databuf, 0x2);
 				if(res <= 0)
 				{
+					mutex_unlock(&ltrinterrupt_mutex);
 					return;
 				}
 		}

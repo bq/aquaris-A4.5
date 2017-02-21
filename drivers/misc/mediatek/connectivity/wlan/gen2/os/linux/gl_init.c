@@ -689,8 +689,6 @@
 
 BOOLEAN fgIsUnderSuspend = false;
 
-struct semaphore g_halt_sem;
-int g_u4HaltFlag = 1;
 
 #if CFG_ENABLE_WIFI_DIRECT
 spinlock_t g_p2p_lock;
@@ -1548,9 +1546,7 @@ static void createWirelessDevice(void)
 		return;
 	}
 
-	/* initialize semaphore for ioctl */
-	sema_init(&g_halt_sem, 1);
-	g_u4HaltFlag = 1;
+
 	/* <1.2> Create wiphy */
 	prWiphy = wiphy_new(&mtk_wlan_ops, sizeof(GLUE_INFO_T));
 	if (!prWiphy) {
@@ -1690,12 +1686,14 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 
 	fgIsWorkMcStart = TRUE;
 
+
 	DBGLOG(INIT, INFO, "wlanSetMulticastListWorkQueue start...\n");
 
-	down(&g_halt_sem);
-	if (g_u4HaltFlag) {
+	if (kalHaltLock(KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE))
+		return;
+	if (kalIsHalted()) {
 		fgIsWorkMcStart = FALSE;
-		up(&g_halt_sem);
+		kalHaltUnlock();
 		return;
 	}
 
@@ -1705,7 +1703,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 	if (!prDev || !prGlueInfo) {
 		DBGLOG(INIT, WARN, "abnormal dev or skb: prDev(0x%p), prGlueInfo(0x%p)\n", prDev, prGlueInfo);
 		fgIsWorkMcStart = FALSE;
-		up(&g_halt_sem);
+		kalHaltUnlock();
 		return;
 	}
 
@@ -1725,7 +1723,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 		}
 	}
 
-	up(&g_halt_sem);
+	kalHaltUnlock();
 
 	if (kalIoctl(prGlueInfo,
 		     wlanoidSetCurrentPacketFilter,
@@ -1741,10 +1739,12 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 		PUINT_8 prMCAddrList = NULL;
 		UINT_32 i = 0;
 
-		down(&g_halt_sem);
-		if (g_u4HaltFlag) {
+		if (kalHaltLock(KAL_HALT_LOCK_TIMEOUT_NORMAL_CASE))
+			return;
+		if (kalIsHalted()) {
 			fgIsWorkMcStart = FALSE;
-			up(&g_halt_sem);
+			kalHaltUnlock();
+			/*DBGLOG(INIT, WARN, "wlanSetMulticastListWorkQueue g_u4HaltFlag=%d\n", g_u4HaltFlag);*/
 			return;
 		}
 
@@ -1757,7 +1757,7 @@ static void wlanSetMulticastListWorkQueue(struct work_struct *work)
 			}
 		}
 
-		up(&g_halt_sem);
+		kalHaltUnlock();
 
 		kalIoctl(prGlueInfo,
 			 wlanoidSetMulticastList,
@@ -2965,7 +2965,7 @@ bailout:
 			prWdev->wiphy->bands[IEEE80211_BAND_5GHZ] = NULL;
 
 		prGlueInfo->main_thread = kthread_run(tx_thread, prGlueInfo->prDevHandler, "tx_thread");
-		g_u4HaltFlag = 0;
+		kalSetHalted(FALSE);
 #if CFG_SUPPORT_ROAMING_ENC
 		/* adjust roaming threshold */
 		{
@@ -3180,6 +3180,7 @@ bailout:
 /*----------------------------------------------------------------------------*/
 static VOID wlanRemove(VOID)
 {
+#define KAL_WLAN_REMOVE_TIMEOUT_MSEC			3000
 	struct net_device *prDev = NULL;
 	P_WLANDEV_INFO_T prWlandevInfo = NULL;
 	P_GLUE_INFO_T prGlueInfo = NULL;
@@ -3252,7 +3253,7 @@ static VOID wlanRemove(VOID)
 
 	kalMemSet(&(prGlueInfo->prAdapter->rWlanInfo), 0, sizeof(WLAN_INFO_T));
 
-	g_u4HaltFlag = 1;	/* before flush_delayed_work() */
+	kalSetHalted(TRUE);	/* before flush_delayed_work() */
 	if (fgIsWorkMcStart == TRUE) {
 		DBGLOG(INIT, TRACE, "flush_delayed_work...\n");
 		flush_delayed_work(&workq);	/* flush_delayed_work_sync is deprecated */
@@ -3261,7 +3262,7 @@ static VOID wlanRemove(VOID)
 	flush_delayed_work(&sched_workq);
 
 	DBGLOG(INIT, INFO, "down g_halt_sem...\n");
-	down(&g_halt_sem);
+	kalHaltLock(KAL_WLAN_REMOVE_TIMEOUT_MSEC);
 #if CFG_SPM_WORKAROUND_FOR_HOTSPOT
 	if (glIsChipNeedWakelock(prGlueInfo))
 		KAL_WAKE_LOCK_DESTROY(prGlueInfo->prAdapter, &prGlueInfo->prAdapter->rApWakeLock);
@@ -3333,7 +3334,7 @@ static VOID wlanRemove(VOID)
 	/* 4 <5> Release the Bus */
 	glBusRelease(prDev);
 
-	up(&g_halt_sem);
+	kalHaltUnlock();
 	wlanDebugUninit();
 	/* 4 <6> Unregister the card */
 	wlanNetUnregister(prDev->ieee80211_ptr);
