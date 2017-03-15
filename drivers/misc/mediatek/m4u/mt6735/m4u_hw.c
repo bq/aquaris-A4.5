@@ -285,7 +285,7 @@ int config_mau(M4U_MAU_STRUCT mau)
 	unsigned int MVAStart = mau.mva;
 	unsigned int MVAEnd = mau.mva + mau.size;
 
-	if (0 != m4u_id)
+	if (m4u_id == -1 || larb == -1)
 		return -1;
 
 	for (i = 0; i < M4U0_MAU_NR; i++) {
@@ -1017,9 +1017,13 @@ EXPORT_SYMBOL(smi_common_clock_off);
 int m4u_insert_seq_range(M4U_PORT_ID port, unsigned int MVAStart, unsigned int MVAEnd)
 {
 	int i, free_id = -1;
-	unsigned int m4u_index = m4u_port_2_m4u_id(port);
-	unsigned int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
-	M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
+	int m4u_index = m4u_port_2_m4u_id(port);
+	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
+	M4U_RANGE_DES_T *pSeq;
+
+	if (m4u_index == -1 || m4u_slave_id == -1)
+		return -1;
+	pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
 
 	M4ULOG_MID("m4u_insert_seq_range , module:%s, MVAStart:0x%x, MVAEnd:0x%x\n",
 			m4u_get_port_name(port), MVAStart, MVAEnd);
@@ -1097,9 +1101,12 @@ int m4u_invalid_seq_range_by_id(int port, int seq_id)
 	int m4u_index = m4u_port_2_m4u_id(port);
 	int m4u_slave_id = m4u_port_2_m4u_slave_id(port);
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
-	M4U_RANGE_DES_T *pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
+	M4U_RANGE_DES_T *pSeq;
 	int ret = 0;
 
+	if (m4u_index == -1 || m4u_slave_id == -1)
+		return -1;
+	pSeq = gM4USeq[m4u_index] + M4U_SEQ_NUM(m4u_index)*m4u_slave_id;
 	mutex_lock(&gM4u_seq_mutex);
 	{
 		pSeq[seq_id].Enabled = 0;
@@ -1149,12 +1156,13 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 	int m4u_index = m4u_port_2_m4u_id(port);
 	unsigned long m4u_base = gM4UBaseAddr[m4u_index];
 	unsigned long larb_base;
-	unsigned int larb, larb_port;
+	int larb, larb_port;
 	int ret = 0;
 
 	M4ULOG_HIGH("config_port:%s,v%d,s%d\n",
 	m4u_get_port_name(port), virt, sec);
-
+	if (m4u_index == -1)
+		return -1;
 	/* MMProfileLogEx(M4U_MMP_Events[M4U_MMP_CONFIG_PORT], MMProfileFlagStart, port, virt); */
 
 	spin_lock(&gM4u_reg_lock);
@@ -1169,6 +1177,8 @@ static int _m4u_config_port(int port, int virt, int sec, int dis, int dir)
 		int mmu_en = 0;
 
 		larb = m4u_port_2_larb_id(port);
+		if (larb == -1)
+			return -1;
 		larb_port = m4u_port_2_larb_port(port);
 		larb_base = gLarbBaseAddr[larb];
 
@@ -1628,8 +1638,12 @@ void m4u_print_port_status(struct seq_file *seq, int only_print_active)
 
 	for (port = 0; port < gM4u_port_num; port++) {
 		m4u_index = m4u_port_2_m4u_id(port);
+		if (m4u_index == -1)
+			return;
 		if (m4u_index == 0) {
 			larb = m4u_port_2_larb_id(port);
+			if (larb == -1)
+				return;
 			larb_port = m4u_port_2_larb_port(port);
 			larb_base = gLarbBaseAddr[larb];
 
