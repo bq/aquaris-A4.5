@@ -1871,7 +1871,8 @@ static int __parse_tag_videolfb_extra(unsigned long node)
 	prop = (void *)of_get_flat_dt_prop(node, "atag,videolfb-fps", NULL);
 	if (!prop)
 		return -1;
-	lcd_fps = of_read_number(prop, 1);
+	//lcd_fps = of_read_number(prop, 1);
+	lcd_fps = 6500;
 	if (0 == lcd_fps)
 		lcd_fps = 6000;
 
@@ -1910,7 +1911,8 @@ static int __parse_tag_videolfb(unsigned long node)
 		strcpy((char *)mtkfb_lcm_name, videolfb_tag->lcmname);
 		mtkfb_lcm_name[strlen(videolfb_tag->lcmname)] = '\0';
 
-		lcd_fps = videolfb_tag->fps;
+		//lcd_fps = videolfb_tag->fps;
+		lcd_fps = 6500;
 		if (0 == lcd_fps)
 			lcd_fps = 6000;
 

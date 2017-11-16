@@ -1,16 +1,3 @@
-/*
- * Copyright (C) 2015 MediaTek Inc.
- *
- * This program is free software: you can redistribute it and/or modify
- * it under the terms of the GNU General Public License version 2 as
- * published by the Free Software Foundation.
- *
- * This program is distributed in the hope that it will be useful,
- * but WITHOUT ANY WARRANTY; without even the implied warranty of
- * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the
- * GNU General Public License for more details.
- */
-
 #ifndef BATTERY_COMMON_H
 #define BATTERY_COMMON_H
 
@@ -47,11 +34,7 @@
 
 
 #define MUTEX_TIMEOUT                       (5000)
-#ifdef BAT_TASK_PERIOD_SECOND
-	#define BAT_TASK_PERIOD                     (BAT_TASK_PERIOD_SECOND)
-#else
-	#define BAT_TASK_PERIOD                     (10)
-#endif
+#define BAT_TASK_PERIOD                     (10)/* 10sec */
 #define g_free_bat_temp					(100)0	/* 1 s */
 
 /*****************************************************************************
@@ -167,6 +150,7 @@ typedef enum {
 	TEMP_POS_HIGH
 } batt_temp_state_enum;
 
+//LC--qindh--20151101 add for runin BAT_OVER_SOC_RECHARGE start
 #if defined(BAT_OVER_SOC_RECHARGE) 
 /*****************************************************************************
 * Normal battery percent state 
@@ -178,6 +162,7 @@ typedef enum
 	SOC_HIGH
 }batt_soc_state_enum;
 #endif
+//LC--qindh--20151101 add for runin BAT_OVER_SOC_RECHARGE end
 
 #ifndef BATTERY_BOOL
 #define BATTERY_BOOL
@@ -340,13 +325,12 @@ extern kal_bool g_ftm_battery_flag;
 extern int charging_level_data[1];
 extern kal_bool g_call_state;
 extern kal_bool g_charging_full_reset_bat_meter;
-#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT)
+#if defined(CONFIG_MTK_PUMP_EXPRESS_SUPPORT) || defined(CONFIG_MTK_PUMP_EXPRESS_PLUS_SUPPORT)
 extern kal_bool ta_check_chr_type;
 extern kal_bool ta_cable_out_occur;
 extern kal_bool is_ta_connect;
 extern struct wake_lock TA_charger_suspend_lock;
 #endif
-
 
 /*****************************************************************************
  *  Extern Function
@@ -362,10 +346,6 @@ extern void do_chrdet_int_task(void);
 extern void set_usb_current_unlimited(bool enable);
 extern bool get_usb_current_unlimited(void);
 extern CHARGER_TYPE mt_get_charger_type(void);
-#if defined(CONFIG_USB_MTK_CHARGER_DETECT)
-extern CHARGER_TYPE usb_charger_type_detect(void);
-extern bool mt_get_usb11_port_status(void);
-#endif
 
 #if defined(CONFIG_MTK_HAFG_20)
 extern struct timespec mt_battery_get_duration_time_act(BATTERY_TIME_ENUM duration_type);
@@ -415,12 +395,11 @@ void check_battery_exist(void);
 #ifdef DLPT_POWER_OFF_EN
 	extern int dlpt_check_power_off(void);
 #endif
-
+#ifdef BATTERY_CDP_WORKAROUND
 extern kal_bool is_usb_rdy(void);
-
+#endif
 extern unsigned int upmu_get_reg_value(unsigned int reg);
 
-extern void mt_charger_enable_DP_voltage(int ison);
 
 /* usb header */
 extern bool mt_usb_is_device(void);

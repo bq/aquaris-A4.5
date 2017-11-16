@@ -216,6 +216,12 @@ static long mtk_extd_mgr_ioctl(struct file *file, unsigned int cmd, unsigned lon
 			 * X = 0 - mhl
 			 * X = 1 - wifi display
 			 */
+			int displayid = 0;
+
+			if (copy_from_user(&displayid, argp, sizeof(displayid))) {
+				EXT_MGR_ERR(": copy_from_user failed! line:%d\n", __LINE__);
+				return -EAGAIN;
+			}
 			r = external_display_get_dev_info(*((unsigned long *)argp), argp);
 			break;
 		}
